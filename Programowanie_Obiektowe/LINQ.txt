@@ -1,0 +1,46 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+// ============================================================
+//  MODEL
+// ============================================================
+
+class WpisHistorii
+{
+    public string Dzialanie { get; set; } = "";
+    public double Wynik     { get; set; }
+}
+
+// ============================================================
+//  LINQ
+// ============================================================
+
+class Program
+{
+    static void Main()
+    {
+        List<WpisHistorii> historia = new List<WpisHistorii>
+        {
+            new WpisHistorii { Dzialanie = "5 + 3",  Wynik =  8  },
+            new WpisHistorii { Dzialanie = "10 - 4", Wynik =  6  },
+            new WpisHistorii { Dzialanie = "3 * 7",  Wynik =  21 },
+            new WpisHistorii { Dzialanie = "20 / 4", Wynik =  5  },
+            new WpisHistorii { Dzialanie = "2 + 2",  Wynik =  4  },
+            new WpisHistorii { Dzialanie = "15 - 20",Wynik = -5  },
+        };
+
+        // --------------------------------------------------------
+        // SUM – suma wszystkich wyników
+        // --------------------------------------------------------
+        // historia.Sum(w => w.Wynik)
+        //   w    – każdy wpis z listy (jak "i" w pętli foreach)
+        //   =>   – "dla którego"
+        //   w.Wynik – pole które sumujemy
+        double suma = historia.Sum(w => w.Wynik);
+        Console.WriteLine($"Suma wyników: {suma}");
+        // wypisze: 8 + 6 + 21 + 5 + 4 + (-5) = 39
+        Console.WriteLine("\n=== STATYSTYKI ===");
+        Console.WriteLine($"  Suma:     {historia.Sum(w => w.Wynik)}");
+    }
+}
