@@ -1,0 +1,496 @@
+// ============================================================
+//  Lekcja: Interfejsy w Javie
+//
+//  Co znajdziesz w tym pliku:
+//    1. Podstawowy interfejs i implementacja
+//    2. Wiele interfejsow na raz (Kaczka)
+//    3. Interfejs jako typ zmiennej i parametru metody
+//    4. Polimorfizm przez interfejsy
+//    5. Metody default i static (Java 8+)
+//    6. Interfejs funkcyjny i wyrazenia lambda
+//    7. Interfejs Comparable — sortowanie obiektow
+//    8. Typowe bledy (zakomentowane — do pokazania uczniom)
+// ============================================================
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+
+// ============================================================
+// BLOK 1 — PODSTAWOWY INTERFEJS
+// ============================================================
+
+// Slowo kluczowe: interface
+// Interfejs opisuje CO obiekt potrafi robic — nie JAK to robi.
+// Wszystkie metody sa domyslnie: public abstract
+// Wszystkie pola sa domyslnie:   public static final (stalymi)
+interface Latajacy {
+
+    // Stala — automatycznie public static final
+    // Kazda implementacja "widzi" ta wartosc
+    double MAX_WYSOKOSC_M = 12_000.0;
+
+    // Metoda abstrakcyjna — brak ciala (brak klamer {})
+    // Kazda klasa implementujaca MUSI ja zdefiniowac
+    void lec();
+
+    // Druga metoda abstrakcyjna
+    double pobierzPredkoscMax();
+}
+
+// ----------------------------------------------------------
+// Klasy implementujace interfejs Latajacy
+// ----------------------------------------------------------
+
+// "implements Latajacy" — Samolot zobowiazuje sie dostarczyc
+// wszystkie metody z interfejsu Latajacy
+class Samolot implements Latajacy {
+
+    private String model;
+    private double predkoscMax;
+
+    public Samolot(String model, double predkoscMax) {
+        this.model        = model;
+        this.predkoscMax  = predkoscMax;
+    }
+
+    // @Override — nadpisanie metody z interfejsu
+    // Kompilator sprawdzi czy sygnatura sie zgadza
+    @Override
+    public void lec() {
+        System.out.println(model + " wznosi sie na wysokosc "
+            + MAX_WYSOKOSC_M + " m");    // uzywamy stalej z interfejsu
+    }
+
+    @Override
+    public double pobierzPredkoscMax() {
+        return predkoscMax;
+    }
+}
+
+class Dron implements Latajacy {
+
+    private String nazwa;
+
+    public Dron(String nazwa) {
+        this.nazwa = nazwa;
+    }
+
+    @Override
+    public void lec() {
+        // Dron ma wlasna implementacje — zupelnie inna niz Samolot
+        System.out.println(nazwa + " unosi sie bezglosnie.");
+    }
+
+    @Override
+    public double pobierzPredkoscMax() {
+        return 80.0;
+    }
+}
+
+
+// ============================================================
+// BLOK 2 — WIELE INTERFEJSOW JEDNOCZESNIE
+// ============================================================
+
+// Drugi interfejs — inne zdolnosci
+interface Plywajacy {
+    void plyn();
+    double pobierzGlebokosc();
+}
+
+// Jeszcze jeden interfejs
+interface Biegajacy {
+    void biegnij();
+}
+
+// Kaczka implementuje TRZY interfejsy naraz — oddzielone przecinkiem
+// To niemozliwe przy dziedziczeniu klas (Java: tylko jedna klasa nadrzedna)
+class Kaczka implements Latajacy, Plywajacy, Biegajacy {
+
+    private String imie;
+
+    public Kaczka(String imie) {
+        this.imie = imie;
+    }
+
+    // Musi zdefiniowac WSZYSTKIE metody ze WSZYSTKICH interfejsow
+
+    @Override
+    public void lec() {
+        System.out.println(imie + ": lec");
+    }
+
+    @Override
+    public double pobierzPredkoscMax() {
+        return 30.0;
+    }
+
+    @Override
+    public void plyn() {
+        System.out.println(imie + ":Plyn");
+    }
+
+    @Override
+    public double pobierzGlebokosc() {
+        return 0.5;
+    }
+
+    @Override
+    public void biegnij() {
+        System.out.println(imie + ": Biegnie");
+    }
+}
+
+// Rekin — implementuje tylko Plywajacy
+// Nie musi nic wiedziec o Latajacy
+class Rekin implements Plywajacy {
+
+    @Override
+    public void plyn() {
+        System.out.println("Rekin przecina wode z predkoscia 50 km/h.");
+    }
+
+    @Override
+    public double pobierzGlebokosc() {
+        return 500.0;
+    }
+}
+
+
+// ============================================================
+// BLOK 3 — METODY DEFAULT I STATIC (Java 8+)
+// ============================================================
+
+interface Pojazd {
+
+    String pobierzNazwe();    // abstrakcyjna — do implementacji
+
+    // Metoda default — MA implementacje w interfejsie.
+    // Klasa moze ja nadpisac — ale nie musi.
+    // Jezeli nie nadpisze, dostaje te gotowa wersje.
+    default void wyswietlInfo() {
+        // Wywoluje pobierzNazwe() — metode abstrakcyjna.
+        // Java uzyje implementacji z konkretnej klasy (polimorfizm).
+        System.out.println("Pojazd: " + pobierzNazwe()
+            + " | predkosc max: " + pobierzPredkoscMax() + " km/h");
+    }
+
+    // Zeby wyswietlInfo() mogla wywolac pobierzPredkoscMax(),
+    // musimy ja tez zadeklarowac w tym interfejsie.
+    double pobierzPredkoscMax();
+
+    // Metoda static — nalezy do INTERFEJSU, nie do obiektu.
+    // Wywolanie: Pojazd.aktualnyRok()  — nie przez zmienna obiektu.
+    static int aktualnyRok() {
+        return 2025;
+    }
+}
+
+// Samochod implementuje Pojazd
+// NIE nadpisuje wyswietlInfo() — uzywa wersji default
+class Samochod implements Pojazd {
+
+    private String marka;
+    private double predkosc;
+
+    public Samochod(String marka, double predkosc) {
+        this.marka    = marka;
+        this.predkosc = predkosc;
+    }
+
+    @Override
+    public String pobierzNazwe() {
+        return marka;
+    }
+
+    @Override
+    public double pobierzPredkoscMax() {
+        return predkosc;
+    }
+}
+
+// Rower implementuje Pojazd
+// NADPISUJE wyswietlInfo() — ma wlasna wersje
+class Rower implements Pojazd {
+
+    @Override
+    public String pobierzNazwe() {
+        return "Rower gorski";
+    }
+
+    @Override
+    public double pobierzPredkoscMax() {
+        return 40.0;
+    }
+
+    // Nadpisanie metody default — klasa moze to zrobic jesli chce
+    @Override
+    public void wyswietlInfo() {
+        System.out.println("Jednosledowy: " + pobierzNazwe()
+            + " (max " + pobierzPredkoscMax() + " km/h, brak silnika)");
+    }
+}
+
+
+// ============================================================
+// BLOK 4 — INTERFEJS FUNKCYJNY I LAMBDA (Java 8+)
+// ============================================================
+
+// @FunctionalInterface — interfejs z DOKLADNIE jedna metoda abstrakcyjna.
+// Adnotacja nie jest obowiazkowa, ale warto jej uzywac:
+// kompilator zglosi blad jesli ktos doda drugą metode abstrakcyjna.
+@FunctionalInterface
+interface Operacja {
+    double wykonaj(double a, double b);
+
+    // Metody default i static nie psuja reguly "jednej metody"
+    default String opis() {
+        return "Operacja matematyczna";
+    }
+}
+
+// ============================================================
+// BLOK 5 — INTERFEJS COMPARABLE (sortowanie)
+// ============================================================
+
+// Comparable<T> — wbudowany interfejs Javy.
+// Implementujac go, klasa mowi jak porownywac jej obiekty.
+// Metoda compareTo() zwraca:
+//   liczbe ujemna — jesli this < inny
+//   zero          — jesli this == inny
+//   liczbe dodatnia — jesli this > inny
+class Student implements Comparable<Student> {
+
+    String nazwisko;
+    double srednia;
+
+    public Student(String nazwisko, double srednia) {
+        this.nazwisko = nazwisko;
+        this.srednia  = srednia;
+    }
+
+    @Override
+    public int compareTo(Student inny) {
+        // Sortowanie po sredniej — malejaco (wyzsze srednie pierwsze)
+        return Double.compare(inny.srednia, this.srednia);
+    }
+
+    @Override
+    public String toString() {
+        return nazwisko + " (srednia: " + srednia + ")";
+    }
+}
+
+
+// ============================================================
+// KLASA GLOWNA — demonstracja wszystkiego
+// ============================================================
+
+public class Main {
+
+    // Metoda przyjmujaca INTERFEJS jako parametr.
+    // Dziala z KAZDA klasa implementujaca Latajacy —
+    // teraz i w przyszlosci. Nie musi znac konkretnych typow.
+    static void rozpocznijLot(Latajacy obiekt) {
+        System.out.println("--- Przygotowanie do startu ---");
+        System.out.println("Predkosc max: " + obiekt.pobierzPredkoscMax() + " km/h");
+        obiekt.lec();
+        System.out.println("-------------------------------");
+    }
+
+    public static void main(String[] args) {
+
+        // --------------------------------------------------
+        System.out.println("=== BLOK 1: Podstawowe uzywanie interfejsu ===\n");
+        // --------------------------------------------------
+
+        // Mozna tworzyc obiekt konkretnej klasy...
+        Samolot boeing = new Samolot("Boeing 737", 850.0);
+        boeing.lec();
+
+        // ...ale tez przypisac go do zmiennej TYPU INTERFEJSOWEGO.
+        // Zmienna "latajacy" "nie wie" ze to Boeing — widzi tylko Latajacy.
+        Latajacy latajacy = new Samolot("Airbus A380", 1050.0);
+        latajacy.lec();
+
+        // To samo z Dronem — oba obiekty pasuja do zmiennej typu Latajacy
+        latajacy = new Dron("DJI Phantom");
+        latajacy.lec();
+
+        System.out.println();
+
+        // --------------------------------------------------
+        System.out.println("=== BLOK 2: Wiele interfejsow ===\n");
+        // --------------------------------------------------
+
+        Kaczka kaczka = new Kaczka("Donaldek");
+
+        // Kaczka jako Latajacy
+        Latajacy jakoLatajacy = kaczka;
+        jakoLatajacy.lec();
+
+        // Kaczka jako Plywajacy
+        Plywajacy jakoPlywajacy = kaczka;
+        jakoPlywajacy.plyn();
+
+        // Kaczka jako Biegajacy
+        Biegajacy jakoBiegajacy = kaczka;
+        jakoBiegajacy.biegnij();
+
+        System.out.println();
+
+        // --------------------------------------------------
+        System.out.println("=== BLOK 3: Interfejs jako parametr — polimorfizm ===\n");
+        // --------------------------------------------------
+
+        // Metoda rozpocznijLot() przyjmuje Latajacy.
+        // Nie wie ze to Samolot, Dron lub Kaczka — i nie musi wiedziec.
+        rozpocznijLot(new Samolot("Cessna 172", 235.0));
+        rozpocznijLot(new Dron("Parrot AR"));
+        rozpocznijLot(new Kaczka("Kwakuś"));
+
+        System.out.println();
+
+        // --------------------------------------------------
+        System.out.println("=== BLOK 4: Lista obiektow roznych typow ===\n");
+        // --------------------------------------------------
+
+        // Lista moze przechowywac ROZNE typy — jesli wszystkie
+        // implementuja ten sam interfejs
+        List<Latajacy> flota = new ArrayList<>();
+        flota.add(new Samolot("F-16",   2400.0));
+        flota.add(new Dron("MQ-9 Reaper"));
+        flota.add(new Kaczka("Dzika"            ));
+
+        System.out.println("Pelna flota:");
+        for (Latajacy l : flota) {
+            // Java wybiera wlasciwa metode lec() dla kazdego obiektu
+            // To jest wlasnie polimorfizm przez interfejsy
+            l.lec();
+        }
+
+        System.out.println();
+
+        // --------------------------------------------------
+        System.out.println("=== BLOK 5: Metody default i static ===\n");
+        // --------------------------------------------------
+
+        Samochod toyota = new Samochod("Toyota GR86", 226.0);
+        Rower   trek    = new Rower();
+
+        // Toyota uzywa metody default z interfejsu Pojazd
+        toyota.wyswietlInfo();
+
+        // Rower nadpisal wyswietlInfo() — uzywa wlasnej wersji
+        trek.wyswietlInfo();
+
+        // Metoda static — wywolanie przez nazwe INTERFEJSU, nie obiektu
+        // toyota.aktualnyRok()  <-- to by nie zadziałało!
+        System.out.println("Rok modelowy: " + Pojazd.aktualnyRok());
+
+        System.out.println();
+
+        // --------------------------------------------------
+        System.out.println("=== BLOK 6: Interfejs funkcyjny i lambda ===\n");
+        // --------------------------------------------------
+
+        // Stary sposob — anonimowa klasa (duzo kodu)
+        Operacja sumaKlasyczna = new Operacja() {
+            @Override
+            public double wykonaj(double a, double b) {
+                return a + b;
+            }
+        };
+
+        // Nowy sposob — wyrazenie lambda (zwiezle)
+        // Skladnia: (parametry) -> wyrazenie_lub_blok
+        Operacja sumaLambda    = (a, b) -> a + b;
+        Operacja roznica       = (a, b) -> a - b;
+        Operacja iloczyn       = (a, b) -> a * b;
+        Operacja potega        = (a, b) -> Math.pow(a, b);
+
+        // Wywolanie — tak samo jak przy zwyklej implementacji
+        System.out.println("Suma (klasa):  " + sumaKlasyczna.wykonaj(10, 3));
+        System.out.println("Suma (lambda): " + sumaLambda.wykonaj(10, 3));
+        System.out.println("Roznica:       " + roznica.wykonaj(10, 3));
+        System.out.println("Iloczyn:       " + iloczyn.wykonaj(10, 3));
+        System.out.println("10 do potegi 3: " + potega.wykonaj(10, 3));
+
+        // Lambda moze byc przekazana jako argument do metody!
+        System.out.println("\nWyniki dla (7, 2):");
+        wyswietlWynik("dodawanie", (a, b) -> a + b,         7, 2);
+        wyswietlWynik("odejmowanie",(a, b) -> a - b,        7, 2);
+        wyswietlWynik("potegowanie",(a, b) -> Math.pow(a,b),7, 2);
+
+        System.out.println();
+
+        // --------------------------------------------------
+        System.out.println("=== BLOK 7: Comparable — sortowanie obiektow ===\n");
+        // --------------------------------------------------
+
+        List<Student> studenci = new ArrayList<>();
+        studenci.add(new Student("Kowalski",  4.5));
+        studenci.add(new Student("Nowak",     3.2));
+        studenci.add(new Student("Wisniewski",4.8));
+        studenci.add(new Student("Dabrowska", 3.9));
+
+        System.out.println("Przed sortowaniem:");
+        for (Student s : studenci) System.out.println("  " + s);
+
+        // Collections.sort() uzywa compareTo() z interfejsu Comparable
+        Collections.sort(studenci);
+
+        System.out.println("\nPo sortowaniu (malejaco po sredniej):");
+        for (Student s : studenci) System.out.println("  " + s);
+
+        // Comparator jako lambda — inny porzadek sortowania
+        studenci.sort((s1, s2) -> s1.nazwisko.compareTo(s2.nazwisko));
+
+        System.out.println("\nPo sortowaniu (alfabetycznie po nazwisku):");
+        for (Student s : studenci) System.out.println("  " + s);
+
+        System.out.println();
+
+        // --------------------------------------------------
+        System.out.println("=== BLOK 8: TYPOWE BLEDY (zakomentowane) ===\n");
+        // --------------------------------------------------
+
+        // BLAD 1: Proba tworzenia instancji interfejsu
+        // Latajacy l = new Latajacy();
+        // KOMUNIKAT: Latajacy is abstract; cannot be instantiated
+
+        // BLAD 2: Klasa nie implementuje wszystkich metod
+        // class Motyl implements Latajacy {
+        //     public void lec() { System.out.println("Frune!"); }
+        //     // Brak: pobierzPredkoscMax()
+        //     // KOMUNIKAT: Motyl is not abstract and does not override
+        //     //             abstract method pobierzPredkoscMax() in Latajacy
+        // }
+
+        // BLAD 3: Dostep do metody spoza interfejsu przez zmienna interfejsowa
+        // Latajacy ref = new Kaczka("Test");
+        // ref.plyn();
+        // KOMUNIKAT: cannot find symbol — method plyn() in Latajacy
+        // ROZWIAZANIE: rzutowanie
+        // ((Kaczka) ref).plyn();   — dziala!
+        // lub lepiej: instanceof przed rzutowaniem
+        Latajacy ref = new Kaczka("Testowa");
+        if (ref instanceof Kaczka kaczkaRef) {
+            kaczkaRef.plyn();    // Java 16+ — pattern matching instanceof
+        }
+
+        // BLAD 4: Dwa interfejsy z ta sama metoda default — konflikt
+        // Klasa MUSI nadpisac metode — inaczej blad kompilacji.
+        // Patrz przyklad w komentarzu w BLOK 3 skryptu.
+
+        System.out.println("\n=== Koniec demonstracji ===");
+    }
+
+    // Metoda pomocnicza — przyjmuje interfejs funkcyjny jako parametr
+    // Mozna jej przekazac dowolna lambde zgodna z Operacja
+    static void wyswietlWynik(String nazwa, Operacja op, double a, double b) {
+        System.out.printf("  %-12s: %.2f%n", nazwa, op.wykonaj(a, b));
+    }
+}

@@ -1,0 +1,269 @@
+// ============================================================
+//  Lekcja: Klasy abstrakcyjne w Javie
+//
+//  Co znajdziesz w tym pliku:
+//    1. Abstrakcyjna klasa bazowa  (Zwierze)
+//    2. Konkretne podklasy         (Pies, Kot, Papuga)
+//    3. Wielopoziomowa hierarchia  (Pojazd -> PojazdSilnikowy -> Samochod)
+//    4. Polimorfizm w akcji        (petla po tablicy Zwierze[])
+//    5. Typowe bledy
+// ============================================================
+
+
+// ============================================================
+// BLOK 1 — PROSTA KLASA ABSTRAKCYJNA
+// ============================================================
+
+// Slowo "abstract" przed "class" sprawia ze:
+//   - nie mozna napisac: new Zwierze()
+//   - klasa moze miec metody bez implementacji (tez "abstract")
+abstract class Zwierze {
+
+    // --- POLA ---
+    // Pola sa zwykle protected, zeby podklasy mialy do nich dostep
+    // private byloby za restrykcyjne (podklasy nie mialyby dostepu)
+    // public byloby za szerokie (kazdy moze modyfikowac)
+    protected String imie;
+    protected int    wiek;
+
+    // --- KONSTRUKTOR ---
+    // Klasa abstrakcyjna MOZE miec konstruktor.
+    // Nie wywolujemy go przez "new Zwierze(...)" —
+    // wywoluja go podklasy przez "super(imie, wiek)"
+    public Zwierze(String imie, int wiek) {
+        this.imie = imie;
+        this.wiek  = wiek;
+        // Mozna tu dodac walidacje wspolna dla wszystkich zwierzat
+        if (wiek < 0) throw new IllegalArgumentException("Wiek nie moze byc ujemny");
+    }
+
+    // --- METODY ABSTRAKCYJNE ---
+    // Brak ciala metody (brak klamer {}) — tylko deklaracja.
+    // Kazda konkretna podklasa MUSI je nadpisac, inaczej
+    // kompilator zglosi blad.
+    public abstract void wydajDzwiek();   // kazde zwierze wydaje inny dzwiek
+    public abstract String rodzaj();      // kazde zwierze ma inny rodzaj
+
+    // --- METODY ZWYKLE (ZAIMPLEMENTOWANE) ---
+    // Te metody sa wspolne dla wszystkich zwierzat — podklasy
+    // dziedzicza je bez zmian. Zmiana tutaj = zmiana wszdzie.
+    public void spij() {
+        System.out.println(imie + " spi...");
+    }
+
+    public void jedz(String pokarm) {
+        System.out.println(imie + " je: " + pokarm);
+    }
+
+    // --- METODA FINAL ---
+    // "final" oznacza ze zadna podklasa NIE MOZE jej nadpisac.
+    // Uzywamy gdy logika musi byc identyczna w calej hierarchii.
+    // Tutaj: toString() zawsze zwraca ten sam format opisu.
+    @Override
+    public final String toString() {
+        // rodzaj() jest abstrakcyjna — zostanie wywolana wersja z podklasy
+        return rodzaj() + " [" + imie + ", " + wiek + " lat]";
+    }
+}
+
+
+// ============================================================
+// BLOK 2 — KONKRETNE PODKLASY
+// ============================================================
+
+// "extends Zwierze" oznacza: Pies dziedziczy po Zwierze
+// Pies MUSI zaimplementowac: wydajDzwiek() i rodzaj()
+// Pies DOSTAJE za darmo:     spij(), jedz(), toString()
+class Pies extends Zwierze {
+
+    private String rasa;   // dodatkowe pole specyficzne dla Psa
+
+    // Konstruktor podklasy wywoluje konstruktor nadklasy przez super()
+    // super() MUSI byc pierwsza instrukcja w konstruktorze
+    public Pies(String imie, int wiek, String rasa) {
+        super(imie, wiek);   // przekazuje imie i wiek do Zwierze
+        this.rasa = rasa;
+    }
+
+    // @Override informuje kompilator ze nadpisujemy metode z nadklasy
+    // Jesli popelnimy literowke w nazwie, kompilator zglosi blad —
+    // bez @Override przeszloby to niezauwazaone jako nowa metoda
+    @Override
+    public void wydajDzwiek() {
+        System.out.println(imie + ": Hau hau");
+    }
+
+    @Override
+    public String rodzaj() {
+        return "Pies (" + rasa + ")";
+    }
+
+    // Pies moze miec dodatkowe metody ktorych nie ma Zwierze
+    public void aportuj() {
+        System.out.println(imie + " przynosi pilke");
+    }
+}
+
+
+class Kot extends Zwierze {
+
+    private boolean jesWdomu;  // czy kot jest domowy
+
+    public Kot(String imie, int wiek, boolean jesWdomu) {
+        super(imie, wiek);
+        this.jesWdomu = jesWdomu;
+    }
+
+    @Override
+    public void wydajDzwiek() {
+        // Zachowanie moze zalezec od pol podklasy
+        if (jesWdomu) {
+            System.out.println(imie + ": Mrrr... miau");
+        } else {
+            System.out.println(imie + ": MIAAAU (dziki)");
+        }
+    }
+
+    @Override
+    public String rodzaj() {
+        return jesWdomu ? "Kot domowy" : "Kot dziki";
+    }
+}
+
+
+// ============================================================
+// BLOK 3 — WIELOPOZIOMOWA HIERARCHIA ABSTRAKCYJNA
+// ============================================================
+
+// Klasa abstrakcyjna moze dziedziczyc po innej klasie abstrakcyjnej.
+// Kazdy poziom dodaje troche konkretnosci.
+//
+// Hierarchia:
+//   Pojazd (abstrakcyjny)
+//     PojazdSilnikowy (abstrakcyjny — dodaje pojecie silnika)
+//       Samochod (konkretny — implementuje wszystko)
+
+abstract class Pojazd {
+    protected String marka;
+    protected int    rokProdukcji;
+
+    public Pojazd(String marka, int rok) {
+        this.marka         = marka;
+        this.rokProdukcji  = rok;
+    }
+
+    // Kazdy pojazd musi umiec "ruszyc" — ale jak? To zalezny od typu
+    public abstract void rusz();
+
+    // Wspolna metoda dla wszystkich pojazdow
+    public void wyswietlInfo() {
+        System.out.println("Pojazd: " + marka + " (" + rokProdukcji + ")");
+    }
+}
+
+// PojazdSilnikowy sam jest abstrakcyjny — nie implementuje rusz()
+// ale dodaje nowe abstrakcyjne metody zwiazane z silnikiem
+abstract class PojazdSilnikowy extends Pojazd {
+    protected int pojemnoscSilnika;  // cm3
+
+    public PojazdSilnikowy(String marka, int rok, int pojemnosc) {
+        super(marka, rok);           // wywolanie konstruktora Pojazd
+        this.pojemnoscSilnika = pojemnosc;
+    }
+
+    // Nowa metoda abstrakcyjna na tym poziomie hierarchii
+    public abstract String typPaliwa();
+
+    // Metoda zaimplementowana — wspolna dla wszystkich z silnikiem
+    public void uruchomSilnik() {
+        System.out.println(marka + " (" + pojemnoscSilnika + "cc): Vroom!");
+    }
+}
+
+// Samochod jest KONKRETNY — musi zaimplementowac WSZYSTKIE metody abstrakcyjne
+// ze wszystkich poziomow hierarchii:
+//   - rusz()      z Pojazd
+//   - typPaliwa() z PojazdSilnikowy
+class Samochod extends PojazdSilnikowy {
+    private int liczbaDrzwi;
+    private String paliwo;
+
+    public Samochod(String marka, int rok, int pojemnosc, int drzwi, String paliwo) {
+        super(marka, rok, pojemnosc);  // wywolanie konstruktora PojazdSilnikowy
+        this.liczbaDrzwi = drzwi;
+        this.paliwo      = paliwo;
+    }
+
+    @Override
+    public void rusz() {
+        System.out.println(marka + " rusza na " + liczbaDrzwi + " drzwiach.");
+    }
+
+    @Override
+    public String typPaliwa() {
+        return paliwo;
+    }
+}
+
+
+// ============================================================
+// BLOK 4 — KLASA GLOWNA: demonstracja wszystkiego
+// ============================================================
+
+public class Main {
+
+    public static void main(String[] args) {
+
+        System.out.println("=== BLOK 1: Tworzenie obiektow ===\n");
+
+        // Tworzymy konkretne obiekty — podklasy Zwierze
+        Pies   rex    = new Pies("Rex",    3, "Owczarek");
+        Kot    luna   = new Kot("Luna",    5, true);
+
+        // toString() zostanie wywolane automatycznie przez println
+        // Pamietaj: toString() jest final w Zwierze — nie mozna nadpisac
+        System.out.println(rex);    // Pies (Owczarek) [Rex, 3 lat]
+        System.out.println(luna);   // Kot domowy [Luna, 5 lat]
+        System.out.println(polly);  // Papuga [Polly, 2 lat]
+
+        System.out.println("\n=== BLOK 2: Wywolanie metod ===\n");
+
+        rex.wydajDzwiek();          // Hau hau
+        luna.wydajDzwiek();         // Mrrr... miau
+        rex.spij();                 // odziedziczone z Zwierze
+        rex.jedz("sucha karma");    // odziedziczone z Zwierze
+        rex.aportuj();              // specyficzne dla Psa
+
+
+        System.out.println("\n=== BLOK 3: POLIMORFIZM ===\n");
+
+        // Tablica typu Zwierze[] — moze przechowywac Psa, Kota, Papuge
+        // To jest polimorfizm: jedna zmienna, wiele form
+        Zwierze[] zoo = { rex, luna, polly,
+                          new Kot("Dzikus", 1, false) };
+
+        // Petla nie wie czy ma do czynienia z Psem, Kotem czy Papuga —
+        // wywoluje wydajDzwiek() i Java sama wybiera wlasciwa implementacje
+        System.out.println("Wszystkie zwierzeta wydaja dzwiek:");
+        for (Zwierze z : zoo) {
+            // Dynamiczne wiazanie: Java wywoluje wersje z faktycznej podklasy
+            z.wydajDzwiek();
+        }
+
+        System.out.println("\nOgolne informacje:");
+        for (Zwierze z : zoo) {
+            System.out.println("  " + z);  // korzysta z toString() z Zwierze
+        }
+
+
+        System.out.println("\n=== BLOK 4: Hierarchia wielopoziomowa ===\n");
+
+        Samochod auto = new Samochod("Toyota", 2022, 1600, 5, "benzyna");
+        auto.wyswietlInfo();    // z Pojazd
+        auto.uruchomSilnik();   // z PojazdSilnikowy
+        auto.rusz();            // z Samochod
+        System.out.println("Paliwo: " + auto.typPaliwa());
+
+
+    }
+}
